@@ -1,5 +1,0 @@
-<launch>
-    <node name="geometric_verifier" pkg="geometric_verification" type="geometric_verification" output="screen">
-        <param name="cache_path" value="/home/liz/image_cache"/>
-    </node>
-</launch>

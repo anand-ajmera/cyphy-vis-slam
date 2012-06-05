@@ -1,4 +1,0 @@
-# Namespace to publish response topics in. 
-string name
----
-sensor_msgs/CameraInfo info_msg
