@@ -1,4 +1,4 @@
-/* $Id: camera1394_node.cpp 34660 2010-12-11 18:27:24Z joq $ */
+/* $Id: node.cpp 35418 2011-01-24 17:00:14Z joq $ */
 
 /*********************************************************************
 * Software License Agreement (BSD License)
@@ -34,8 +34,8 @@
 *  POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************/
 
-#include <signal.h>
-#include "driver1394.h"
+#include <ros/ros.h>
+#include <nodelet/loader.h>
 
 /** @file
 
@@ -43,37 +43,18 @@
 
 */
 
-/** Segfault signal handler.
- *
- *  Sadly, libdc1394 sometimes crashes.
- */
-void sigsegv_handler(int sig)
-{
-  signal(SIGSEGV, SIG_DFL);
-  fprintf(stderr, "Segmentation fault, stopping camera driver.\n");
-  ROS_ERROR("Segmentation fault, stopping camera.");
-  ros::shutdown();                      // stop the main loop
-}
-
 /** Main node entry point. */
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "multiCamera1394_node");
-  ros::NodeHandle node;
-  ros::NodeHandle priv_nh("~");
-  //std::vector<ros::NodeHandle> camera_nh(1, ros::NodeHandle(node, "camera"));
+  ros::init(argc, argv, "multi_camera1394_node");
 
-  signal(SIGSEGV, &sigsegv_handler);
+  nodelet::Loader nodelet;
+  nodelet::M_string remap(ros::names::getRemappings());
+  nodelet::V_string nargv;
 
-  camera1394_driver::Camera1394Driver dvr(node, priv_nh);
+  nodelet.load("multi_camera1394_node", "multi_camera1394/driver", remap, nargv);
 
-  dvr.setup();
-  while (node.ok())
-    {
-      dvr.poll();
-      ros::spinOnce();
-    }
-  dvr.shutdown();
+  ros::spin();
 
   return 0;
 }

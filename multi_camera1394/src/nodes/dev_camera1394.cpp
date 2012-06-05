@@ -65,7 +65,7 @@
 #define CAM_EXCEPT(except, msg)					\
   {								\
     char buf[100];						\
-    snprintf(buf, 100, "[multiCamera1394::%s]: " msg, __FUNCTION__); \
+    snprintf(buf, 100, "[multi_camera1394::%s]: " msg, __FUNCTION__); \
     throw except(buf);						\
   }
 
@@ -73,7 +73,7 @@
 #define CAM_EXCEPT_ARGS(except, msg, ...)				\
   {									\
     char buf[100];							\
-    snprintf(buf, 100, "[multiCamera1394::%s]: " msg, __FUNCTION__, __VA_ARGS__); \
+    snprintf(buf, 100, "[multi_camera1394::%s]: " msg, __FUNCTION__, __VA_ARGS__); \
     throw except(buf);							\
   }
 

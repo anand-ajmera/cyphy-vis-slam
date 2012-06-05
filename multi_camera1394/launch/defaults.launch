@@ -4,7 +4,7 @@
 	
 	<group ns="stereo" >
 		<!-- Open ALL FIREWIRE cameras with the same configuration -->
-		<node pkg="multiCamera1394" type="camera1394_node" name="multi_camera1394_node" >
+		<node pkg="multi_camera1394" type="multi_camera1394_node" name="multi_camera1394_node" >
 			<remap from="camera_0" to="left" />
 			<remap from="camera_1" to="right" />
 			<param name="guid_0" value="00b09d0100acc96d" />

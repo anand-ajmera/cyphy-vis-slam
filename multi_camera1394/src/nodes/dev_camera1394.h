@@ -48,13 +48,13 @@
 // ROS includes
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/CameraInfo.h>
-#include "multiCamera1394/MultiCamera1394Config.h"
+#include "multi_camera1394/MultiCamera1394Config.h"
 #include "format7.h"
 
 class Features;
 
 typedef boost::shared_ptr<Features> FeaturesPtr;
-typedef multiCamera1394::MultiCamera1394Config Config;
+typedef multi_camera1394::MultiCamera1394Config Config;
 
 namespace multiCamera1394
 {

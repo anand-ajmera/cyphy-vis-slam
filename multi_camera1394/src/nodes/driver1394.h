@@ -38,7 +38,7 @@
 #include <boost/thread/mutex.hpp>
 
 #include <ros/ros.h>
-#include <multi_camera_1394/RelativeTimestamp.h>
+#include <multi_camera1394/RelativeTimestamp.h>
 #include <camera_info_manager/camera_info_manager.h>
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <diagnostic_updater/publisher.h>
@@ -48,8 +48,8 @@
 #include <sensor_msgs/CameraInfo.h>
 
 #include "dev_camera1394.h"
-#include "multiCamera1394/MultiCamera1394Config.h"
-typedef multiCamera1394::MultiCamera1394Config Config;
+#include "multi_camera1394/MultiCamera1394Config.h"
+typedef multi_camera1394::MultiCamera1394Config Config;
 typedef boost::shared_ptr<camera_info_manager::CameraInfoManager> CameraInfoManagerPtr;
 typedef boost::shared_ptr<image_transport::ImageTransport> ImageTransportPtr;
 typedef boost::shared_ptr<ros::Time> TimePtr;

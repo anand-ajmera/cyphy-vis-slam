@@ -263,28 +263,28 @@ void Features::configure(dc1394feature_t feature, int *control,
 
   if (!finfo->available)                // feature not available?
     {
-      *control = multiCamera1394::MultiCamera1394_None;
+      *control = multi_camera1394::MultiCamera1394_None;
       return;
     }
 
   switch (*control)
     {
-    case multiCamera1394::MultiCamera1394_Off:
+    case multi_camera1394::MultiCamera1394_Off:
       setOff(finfo);
       break;
 
-    case multiCamera1394::MultiCamera1394_Query:
+    case multi_camera1394::MultiCamera1394_Query:
       getValues(finfo, value, value2);
       break;
 
-    case multiCamera1394::MultiCamera1394_Auto:
+    case multi_camera1394::MultiCamera1394_Auto:
       if (!setMode(finfo, DC1394_FEATURE_MODE_AUTO))
         {
           setOff(finfo);
         }
       break;
 
-    case multiCamera1394::MultiCamera1394_Manual:
+    case multi_camera1394::MultiCamera1394_Manual:
       if (!setMode(finfo, DC1394_FEATURE_MODE_MANUAL))
         {
           setOff(finfo);
@@ -362,7 +362,7 @@ void Features::configure(dc1394feature_t feature, int *control,
         }
       break;
 
-    case multiCamera1394::MultiCamera1394_OnePush:
+    case multi_camera1394::MultiCamera1394_OnePush:
       // Try to set OnePush mode
       setMode(finfo, DC1394_FEATURE_MODE_ONE_PUSH_AUTO);
 
@@ -370,7 +370,7 @@ void Features::configure(dc1394feature_t feature, int *control,
       setOff(finfo);
       break;
 
-    case multiCamera1394::MultiCamera1394_None:
+    case multi_camera1394::MultiCamera1394_None:
       // Invalid user input, because this feature actually does exist.
       ROS_INFO_STREAM("feature " << featureName(feature)
                       << " exists, cannot set to None");
@@ -402,7 +402,7 @@ Features::state_t Features::getState(dc1394feature_info_t *finfo)
   if (!finfo->available)
     {
       // not available: nothing more to do
-      return multiCamera1394::MultiCamera1394_None;
+      return multi_camera1394::MultiCamera1394_None;
     }
 
   if (finfo->on_off_capable)
@@ -418,7 +418,7 @@ Features::state_t Features::getState(dc1394feature_info_t *finfo)
       else if (pwr == DC1394_OFF)
         {
           // Off overrides mode settings
-          return multiCamera1394::MultiCamera1394_Off;
+          return multi_camera1394::MultiCamera1394_Off;
         }
     }
 
@@ -430,19 +430,19 @@ Features::state_t Features::getState(dc1394feature_info_t *finfo)
       ROS_WARN_STREAM("failed to get current mode of feature "
                       << featureName(feature));
       // treat unavailable mode as Off
-      return multiCamera1394::MultiCamera1394_Off;
+      return multi_camera1394::MultiCamera1394_Off;
     }
 
   switch (mode)
     {
     case DC1394_FEATURE_MODE_MANUAL:
-      return multiCamera1394::MultiCamera1394_Manual;
+      return multi_camera1394::MultiCamera1394_Manual;
     case DC1394_FEATURE_MODE_AUTO:
-      return multiCamera1394::MultiCamera1394_Auto;
+      return multi_camera1394::MultiCamera1394_Auto;
     case DC1394_FEATURE_MODE_ONE_PUSH_AUTO:
-      return multiCamera1394::MultiCamera1394_OnePush;
+      return multi_camera1394::MultiCamera1394_OnePush;
     default:
-      return multiCamera1394::MultiCamera1394_Off;
+      return multi_camera1394::MultiCamera1394_Off;
     }
 }
 

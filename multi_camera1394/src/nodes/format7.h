@@ -43,8 +43,8 @@
 
 #include <dc1394/dc1394.h>
 
-#include "multiCamera1394/MultiCamera1394Config.h"
-typedef multiCamera1394::MultiCamera1394Config Config;
+#include "multi_camera1394/MultiCamera1394Config.h"
+typedef multi_camera1394::MultiCamera1394Config Config;
 
 /** @file
 

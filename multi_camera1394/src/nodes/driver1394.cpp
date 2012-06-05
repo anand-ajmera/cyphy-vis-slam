@@ -41,7 +41,7 @@
 #include <vector>
 
 #include "driver1394.h"
-#include "multiCamera1394/MultiCamera1394Config.h"
+#include "multi_camera1394/MultiCamera1394Config.h"
 #include "features.h"
 
 /** @file
@@ -65,7 +65,7 @@ pipeline similar to the other ROS camera drivers.
 namespace camera1394_driver
 {
   // some convenience typedefs
-  typedef multiCamera1394::MultiCamera1394Config Config;
+  typedef multi_camera1394::MultiCamera1394Config Config;
   typedef driver_base::Driver Driver;
   typedef driver_base::SensorLevels Levels;
 
@@ -158,7 +158,7 @@ namespace camera1394_driver
 							ROS_INFO("Expanding number of node handles and publishers");
 							camera_nh_.push_back(ros::NodeHandle(node_, (*configIter).frame_id));
 							it_.push_back((ImageTransportPtr)new image_transport::ImageTransport(camera_nh_.at(cameraIdx)));
-							relative_time_pub_.push_back((camera_nh_.at(cameraIdx)).advertise<multiCamera1394::RelativeTimestamp>("relative_timestamp", 10));
+							relative_time_pub_.push_back((camera_nh_.at(cameraIdx)).advertise<multi_camera1394::RelativeTimestamp>("relative_timestamp", 10));
 							//}
 						//else if (cameraIdx == 0)
 						//	{
