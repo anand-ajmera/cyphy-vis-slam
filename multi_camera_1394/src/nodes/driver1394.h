@@ -38,7 +38,7 @@
 #include <boost/thread/mutex.hpp>
 
 #include <ros/ros.h>
-#include <multiCamera1394/RelativeTimestamp.h>
+#include <multi_camera_1394/RelativeTimestamp.h>
 #include <camera_info_manager/camera_info_manager.h>
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <diagnostic_updater/publisher.h>

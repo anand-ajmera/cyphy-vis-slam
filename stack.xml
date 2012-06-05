@@ -1,9 +1,9 @@
 <stack>
-  <description brief="cyphy_visual_slam">cyphy_visual_slam</description>
-  <author>Maintained by Liz Murphy</author>
+  <description brief="cyphy-visual-slam">A collection of tools from the QUT CyPhy? Lab in Brisbane, Australia. The tools facilitate an off-the-shelf visual SLAM system, providing integral components (Visual Odometry, Appearance Matching and Graph Building and Optimization) and the 'glue' to connect them. </description>
+  <author>Maintained by Liz Murphy (liz.murphy@qut.edu.au)</author>
   <license>BSD</license>  
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/cyphy/cyphy_visual_slam</url>
+  <url>http://ros.org/wiki/cyphy-vis-slam</url>
   <depend stack="common_msgs" /> <!-- nav_msgs, geometry_msgs, sensor_msgs, stereo_msgs, visualization_msgs -->
   <depend stack="driver_common" /> <!-- dynamic_reconfigure -->
   <depend stack="geometry" /> <!-- tf -->
