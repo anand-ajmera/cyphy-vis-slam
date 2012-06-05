@@ -41,6 +41,12 @@ namespace openfabmap2_ros
 		// Surf parameters that may be used for both 'detector' and 'extractor'
 		int surf_hessian_threshold, surf_num_octaves, surf_num_octave_layers, surf_upright, surf_extended;
 		
+		local_nh_.param<int>("HessianThreshold", surf_hessian_threshold, 1000);
+		local_nh_.param<int>("NumOctaves", surf_num_octaves, 4);
+		local_nh_.param<int>("NumOctaveLayers", surf_num_octave_layers, 2);
+		local_nh_.param<int>("Extended", surf_extended, 0);
+		local_nh_.param<int>("Upright", surf_upright, 1);
+		
 		//////////
 		//create common feature detector
 		std::string detectorType;
@@ -66,22 +72,25 @@ namespace openfabmap2_ros
 																						 fast_non_max_suppression > 0);
 			
 		} else if(detectorType == "SURF") {
-			local_nh_.param<int>("HessianThreshold", surf_hessian_threshold, 1000);
-			local_nh_.param<int>("NumOctaves", surf_num_octaves, 4);
-			local_nh_.param<int>("NumOctaveLayers", surf_num_octave_layers, 2);
-			local_nh_.param<int>("Upright", surf_upright, 1);
-			detector = new cv::SurfFeatureDetector(surf_hessian_threshold, 
+			detector = new cv::SURF(surf_hessian_threshold, 
 																						 surf_num_octaves, 
 																						 surf_num_octave_layers, 
+																						 surf_extended > 0,
 																						 surf_upright > 0);
 			
 		} else if(detectorType == "SIFT") {
-			double sift_threshold;
-			int sift_edge_threshold;
+			int sift_nfeatures, sift_num_octave_layers;
+			double sift_threshold, sift_edge_threshold, sift_sigma;			
+			local_nh_.param<int>("NumFeatures", sift_nfeatures, 0);
+			local_nh_.param<int>("NumOctaveLayers", sift_num_octave_layers, 3);
 			local_nh_.param<double>("Threshold", sift_threshold, 0.04);
-			local_nh_.param<int>("EdgeThreshold", sift_edge_threshold, 10);
-			detector = new cv::SiftFeatureDetector(sift_threshold,
-																						 sift_edge_threshold);
+			local_nh_.param<double>("EdgeThreshold", sift_edge_threshold, 10);
+			local_nh_.param<double>("Sigma", sift_sigma, 1.6);
+			detector = new cv::SIFT(sift_nfeatures,
+															sift_num_octave_layers,
+															sift_threshold,
+															sift_edge_threshold,
+															sift_sigma);
 			
 		} else {
 			int mser_delta, mser_min_area, mser_max_area, mser_max_evolution, mser_edge_blur_size;
@@ -95,7 +104,7 @@ namespace openfabmap2_ros
 			local_nh_.param<double>("AreaThreshold", mser_area_threshold, 1.01);
 			local_nh_.param<double>("MinMargin", mser_min_margin, 0.003);
 			local_nh_.param<int>("EdgeBlurSize", mser_edge_blur_size, 5);
-			detector = new cv::MserFeatureDetector(mser_delta,
+			detector = new cv::MSER(mser_delta,
 																						 mser_min_area,
 																						 mser_max_area,
 																						 mser_max_variation,
@@ -109,10 +118,10 @@ namespace openfabmap2_ros
 		///////////
 		//create common descriptor extractor
 		if(detectorType == "SIFT") {
-			extractor = new cv::SiftDescriptorExtractor();
+			extractor = new cv::SIFT();
 		} else {
-			local_nh_.param<int>("Extended", surf_extended, 0);
-			extractor = new cv::SurfDescriptorExtractor(surf_num_octaves,
+			extractor = new cv::SURF(surf_hessian_threshold, 
+															 surf_num_octaves, 
 																									surf_num_octave_layers,
 																									surf_extended > 0,
 																									surf_upright > 0);
@@ -343,7 +352,7 @@ namespace openfabmap2_ros
 			local_nh_.param<bool>("AddOnlyNewPlaces", only_new_places_, false);
 		
 		// Setup publisher
-		pub_ = nh_.advertise<cyphy_vslam_msgs::Match>("appearance_match",1000);
+		pub_ = nh_.advertise<cyphy_vslam_msgs::Match>("appearance_matches",1000);
 		
 		// Initialise for the first to contain
 		// - Match to current
@@ -411,15 +420,20 @@ namespace openfabmap2_ros
 				if (only_new_places_)
 				{
 					// Check if fabMap believes this to be a new place
-					if (matches.at(0).imgIdx == -1)
+					if (matches.back().imgIdx == -1)
 					{
 						ROS_WARN_STREAM("Adding bow of new place...");
 						fabMap->add(bow);
+						
+						// store the mapping from 'seq' to match ID
+						toImgSeq.push_back(image_msg->header.seq);
 					}					
 				}
-				
+				else
+				{
 				// store the mapping from 'seq' to match ID
 				toImgSeq.push_back(image_msg->header.seq);
+				}
 				
 				// Build message
 				cyphy_vslam_msgs::Match matched;
@@ -476,6 +490,10 @@ namespace openfabmap2_ros
 		{
 			// First frame processed
 				fabMap->add(bow);
+				
+				// store the mapping from 'seq' to match ID
+				toImgSeq.push_back(image_msg->header.seq);
+				
 			firstFrame_ = false;
 		}
 	}
