@@ -4,7 +4,7 @@
      image_cache
 
   </description>
-  <author>liz</author>
+  <author>Liz Murphy (liz.murphy@qut.edu.au)</author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/image_cache</url>
