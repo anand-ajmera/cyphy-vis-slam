@@ -1,0 +1,7 @@
+<launch>
+    <node name="cache_server" pkg="image_cache" type="cache_server" output="screen">
+        <param name="cache_path" value="./"/>
+        <param name="div" value="4" />
+        <param name="use_original" value="false" />
+    </node>
+</launch>
