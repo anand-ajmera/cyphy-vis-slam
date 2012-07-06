@@ -18,7 +18,6 @@
 #include <boost/thread.hpp>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <cv_bridge/cv_bridge.h>
-#include <cv_bridge/CvBridge.h>
 #include <opencv/highgui.h>
 
 #include <ros/callback_queue.h>
@@ -42,6 +41,8 @@ using namespace boost::filesystem;
 using namespace sensor_msgs;
 using namespace message_filters::sync_policies;
 using namespace boost::multi_index;
+
+namespace enc = sensor_msgs::image_encodings;
 
 typedef ExactTime<Image, CameraInfo, Image, CameraInfo> ExactPolicy;
 typedef message_filters::Synchronizer<ExactPolicy> ExactSync;
@@ -135,7 +136,7 @@ public:
         it_.reset(new image_transport::ImageTransport(n_));
         image_transport::TransportHints hints("raw", ros::TransportHints(), n_);
         sub_l_image_.subscribe(*it_, image_topic + string("/left/image_raw"), 100, hints);
-        sub_r_image_.subscribe(*it_, image_topic + string("/left/image_raw"), 100, hints);
+        sub_r_image_.subscribe(*it_, image_topic + string("/right/image_raw"), 100, hints);
         sub_l_info_.subscribe(n_, image_topic + string("/left/camera_info"), 100);
         sub_r_info_.subscribe(n_, image_topic + string("/right/camera_info"), 100);
         exact_sync_.reset(new ExactSync(ExactPolicy(10), sub_l_image_, sub_l_info_, sub_r_image_, sub_r_info_));
@@ -188,6 +189,7 @@ public:
            ROS_INFO("Using original image IDs from matcher");
 
     }
+	
     void addNodeCB(const slam_backend::NodeAddedPtr &msg)
     {
         node_database_.insert(NodeDatabase(msg->header.stamp,msg->node_id));
@@ -215,49 +217,56 @@ public:
                 received_right_cam_info_ = 1;
             }
             // Save left and right
-            assert(l_image_msg->encoding == image_encodings::MONO8);
-            assert(r_image_msg->encoding == image_encodings::MONO8);
-
-            CvBridge g_bridge;
-            // copied from image_view save_image
-            if (g_bridge.fromImage(*l_image_msg, "bgr8"))
-            {
-                IplImage *image_l = g_bridge.toIpl();
-                if (image_l)
-                {
-                    std::string filename = (l_format_ % cache_path_.c_str() % l_image_msg->header.seq % "png").str();
-                    cvSaveImage(filename.c_str(), image_l);
-                }
-                else
-                {
-                    ROS_WARN("Couldn't save image, no data!");
-                }
-            }
-            else
-                ROS_ERROR("Unable to convert %s image to bgr8", l_image_msg->encoding.c_str());
+            assert(l_image_msg->encoding == enc::MONO8);
+            assert(r_image_msg->encoding == enc::MONO8);
 
             // copied from image_view save_image
-            if (g_bridge.fromImage(*r_image_msg, "bgr8"))
+            cv_bridge::CvImagePtr image_l;
+            try
             {
-                IplImage *image_r = g_bridge.toIpl();
-                if (image_r)
-                {
-                    std::string filename = (r_format_ % cache_path_.c_str() % l_image_msg->header.seq % "png").str();
-                    cvSaveImage(filename.c_str(), image_r);
-                }
-                else
-                {
-                    ROS_WARN("Couldn't save image, no data!");
-                }
-            }
-            else
-                ROS_ERROR("Unable to convert %s image to bgr8", l_image_msg->encoding.c_str());
+							image_l = cv_bridge::toCvCopy(l_image_msg, enc::BGR8);
+						}
+					catch (cv_bridge::Exception& e)
+					{
+							ROS_ERROR("Unable to convert %s image to bgr8: %s", l_image_msg->encoding.c_str(), e.what());
+					}
+                
+					if (image_l)
+					{
+							std::string filename = (l_format_ % cache_path_.c_str() % l_image_msg->header.seq % "png").str();
+							cv::imwrite(filename.c_str(), image_l->image);
+					}
+					else
+					{
+							ROS_WARN("Couldn't save image, no data!");
+					}
+
+					// copied from image_view save_image
+					cv_bridge::CvImagePtr image_r;
+					try
+					{
+							image_r = cv_bridge::toCvCopy(r_image_msg, enc::BGR8);
+					}
+					catch (cv_bridge::Exception& e)
+					{
+							ROS_ERROR("Unable to convert %s image to bgr8: %s", r_image_msg->encoding.c_str(), e.what());
+					}
+
+					if (image_r)
+					{
+							std::string filename = (r_format_ % cache_path_.c_str() % l_image_msg->header.seq % "png").str();
+							cv::imwrite(filename.c_str(), image_r->image);
+					}
+					else
+					{
+							ROS_WARN("Couldn't save image, no data!");
+					}
 
 
-            // Republish (LEFT IMAGE ONLY)
-            left_image_pub_.publish(l_image_msg);
-            pub_count_++;
-            database.insert(IDDatabase(l_image_msg->header.stamp,l_image_msg->header.seq,pub_count_));
+					// Republish (LEFT IMAGE ONLY)
+					left_image_pub_.publish(l_image_msg);
+					pub_count_++;
+					database.insert(IDDatabase(l_image_msg->header.stamp,l_image_msg->header.seq,pub_count_));
         }
     }
 
@@ -362,7 +371,7 @@ public:
         {
             img_msg_l.header.stamp = it->ts_;      
             img_msg_l.header.frame_id = "camera_0";
-            img_msg_l.encoding = sensor_msgs::image_encodings::MONO8;
+            img_msg_l.encoding = enc::MONO8;
             if(!req.rectified)
                 img_msg_l.image = l_image_raw;
             else
@@ -380,7 +389,7 @@ public:
         {
             img_msg_r.header.stamp = ros::Time::now();
             img_msg_r.header.frame_id = "camera_1";
-            img_msg_r.encoding = sensor_msgs::image_encodings::MONO8;
+            img_msg_r.encoding = enc::MONO8;
             if(!req.rectified)
                 img_msg_r.image = r_image_raw;
             else
@@ -422,7 +431,7 @@ public:
                 cv_bridge::CvImage img_msg_l;
                 img_msg_r.header.stamp = it->ts_;
                 img_msg_l.header.frame_id = "camera_0";
-                img_msg_l.encoding = sensor_msgs::image_encodings::MONO8;
+                img_msg_l.encoding = enc::MONO8;
                 if(!req.rectified)
                     img_msg_l.image = l_image_raw;
                 else
@@ -442,7 +451,7 @@ public:
                 cv_bridge::CvImage img_msg_r;
                 img_msg_r.header.stamp = it->ts_;
                 img_msg_r.header.frame_id = "camera_1";
-                img_msg_r.encoding = sensor_msgs::image_encodings::MONO8;
+                img_msg_r.encoding = enc::MONO8;
                 if(!req.rectified)
                     img_msg_r.image = r_image_raw;
                 else
@@ -488,7 +497,7 @@ public:
         {
             img_msg_l.header.stamp = it->ts_;      
             img_msg_l.header.frame_id = "camera_0";
-            img_msg_l.encoding = sensor_msgs::image_encodings::MONO8;
+            img_msg_l.encoding = enc::MONO8;
             if(!req.rectified)
                 img_msg_l.image = l_image_raw;
             else
@@ -506,7 +515,7 @@ public:
         {
             img_msg_r.header.stamp = ros::Time::now();
             img_msg_r.header.frame_id = "camera_1";
-            img_msg_r.encoding = sensor_msgs::image_encodings::MONO8;
+            img_msg_r.encoding = enc::MONO8;
             if(!req.rectified)
                 img_msg_r.image = r_image_raw;
             else
@@ -548,7 +557,7 @@ public:
                 cv_bridge::CvImage img_msg_l;
                 img_msg_r.header.stamp = it->ts_;
                 img_msg_l.header.frame_id = "camera_0";
-                img_msg_l.encoding = sensor_msgs::image_encodings::MONO8;
+                img_msg_l.encoding = enc::MONO8;
                 if(!req.rectified)
                     img_msg_l.image = l_image_raw;
                 else
@@ -568,7 +577,7 @@ public:
                 cv_bridge::CvImage img_msg_r;
                 img_msg_r.header.stamp = it->ts_;
                 img_msg_r.header.frame_id = "camera_1";
-                img_msg_r.encoding = sensor_msgs::image_encodings::MONO8;
+                img_msg_r.encoding = enc::MONO8;
                 if(!req.rectified)
                     img_msg_r.image = r_image_raw;
                 else
