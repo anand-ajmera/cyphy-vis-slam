@@ -10,6 +10,7 @@
 #include "g2o/solvers/csparse/linear_solver_csparse.h"
 
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <nav_msgs/Odometry.h>
 
 #include "ros/ros.h"
 #include "visualization_msgs/Marker.h"
@@ -54,7 +55,7 @@ private:
     double graph_publish_rate_;
     int prevID_;
     ros::Time prev_time_;
-    SE2 prev_, curr_;
+    SE2 prev_, curr_, lastOdom_;
     Matrix3d cumulative_covariance;
     int loop_closure_id_;
     int node_count_;
@@ -259,7 +260,107 @@ public:
             
     }
 
-    void vOdomCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
+    void vOdomCallback(const nav_msgs::Odometry::ConstPtr& msg)
+    {
+        boost::mutex::scoped_lock l(m_mutex_);
+        SE2 curr_pose(msg->pose.pose.position.x,msg->pose.pose.position.y,2*atan2(msg->pose.pose.orientation.z,msg->pose.pose.orientation.w));
+
+        if(first_run_)
+        {
+            VertexSE2Vis* robot = new VertexSE2Vis;
+            SE2 pose(0,0,0);
+            robot->setId(node_count_++);
+            robot->setEstimate(pose);
+	        robot->setFixed(true);
+            robot->setMarginalized(false);
+            optimizer_.addVertex(robot); 
+            slam_backend::NodeAdded added_msg;
+            added_msg.header.stamp = msg->header.stamp; 
+            added_msg.node_id = robot->id(); 
+            prevID_ = robot->id();
+            prev_ = pose;
+            prev_time_ = msg->header.stamp;
+            vertex_debug_[robot->id()]=msg->header.stamp;
+            add_pub_.publish(added_msg);
+            first_run_ = false;
+            lastOdom_ = curr_pose;
+            return;
+        }
+        SE2 tf = lastOdom_.inverse() * curr_pose; 
+        lastOdom_ = curr_pose;
+       
+        // should be identical to transform case 
+        most_recent_ = msg->header.stamp;  // log most recent time stamp for when we need to add nodes in loop closure callback
+        curr_ *= tf;     // Instead of taking viso's pose estimate, maintain an internal pose estimate in curr_
+        double dist_travelled = (curr_[0]-prev_[0])*(curr_[0]-prev_[0])+(curr_[1]-prev_[1])*(curr_[1]-prev_[1]);
+      
+        bool bad_edge = false; 
+        if(msg->pose.covariance[0] != 9999 && cumulative_covariance(0,0) < 9999)
+        {     
+            cumulative_covariance(0,0) = cumulative_covariance(0,0)+msg->pose.covariance[0];
+            cumulative_covariance(1,1) = cumulative_covariance(1,1)+msg->pose.covariance[7];
+            cumulative_covariance(2,2) = cumulative_covariance(2,2)+msg->pose.covariance[21];  // Yaw?
+        }
+        else
+        {   
+            ROS_INFO("Inserting weak edge"); 
+            cumulative_covariance(0,0) = 9999;
+            cumulative_covariance(1,1) = 9999;
+            cumulative_covariance(2,2) = 9999;  // Yaw?
+            bad_edge = true;
+        }
+            
+        if(dist_travelled > node_sep_*node_sep_)
+        {
+            // Add robot poses
+            Matrix3d information;
+            VertexSE2Vis* robot = new VertexSE2Vis;
+            robot->setId(node_count_++);
+
+            robot->setEstimate(curr_);
+           // if(bad_edge)
+            //    robot->setMarginalized(true);
+            //else
+                robot->setMarginalized(false);
+
+            optimizer_.addVertex(robot); 
+
+            SE2 transf = prev_.inverse() * curr_; 
+             
+            EdgeSE2Vis* odometry = new EdgeSE2Vis();
+            odometry->vertices()[0] = optimizer_.vertex(prevID_);
+            odometry->vertices()[1] = optimizer_.vertex(robot->id());
+            odometry->setMeasurement(transf);
+            //ROS_INFO("Added ege with %f,%f,%f",transf[0],transf[1],transf[2]);
+            odometry->setInverseMeasurement(transf.inverse());
+            // Temporary fix
+         /*   cumulative_covariance = Matrix3d::Zero();
+            cumulative_covariance(0,0) = (0.3*node_sep_)*(0.3*node_sep_);
+          cumulative_covariance(1,1) = (0.3*node_sep_)*(0.3*node_sep_);
+            cumulative_covariance(2,2) = (60*3.1415/180)*(60*3.1415/180);
+            odometry->setInformation(cumulative_covariance.inverse());*/
+            //odometry->setInformation(ident_cov.inverse());
+            odometry->setInformation(cumulative_covariance.inverse());
+            ROS_INFO("Added covariance with diagonal %f, %f, %f", cumulative_covariance(0,0), cumulative_covariance(1,1), cumulative_covariance(2,2));
+            optimizer_.addEdge(odometry);
+               
+            prevID_ = robot->id();
+            prev_ = curr_;
+            prev_time_ = msg->header.stamp;
+
+            cumulative_covariance = Matrix3d::Zero();
+             
+            slam_backend::NodeAdded added_msg;
+            added_msg.header.stamp = msg->header.stamp; 
+            added_msg.node_id = robot->id(); 
+            vertex_debug_[robot->id()]=msg->header.stamp;
+            add_pub_.publish(added_msg);
+
+	    }
+        
+    }
+
+/*    void vOdomCallback(const geometry_msgs::PoseWithCovarianceStampedConstPtr& msg)
     {
         boost::mutex::scoped_lock l(m_mutex_);
         if(first_run_)
@@ -335,11 +436,11 @@ public:
             //ROS_INFO("Added ege with %f,%f,%f",transf[0],transf[1],transf[2]);
             odometry->setInverseMeasurement(transf.inverse());
             // Temporary fix
-         /*   cumulative_covariance = Matrix3d::Zero();
-            cumulative_covariance(0,0) = (0.3*node_sep_)*(0.3*node_sep_);
-            cumulative_covariance(1,1) = (0.3*node_sep_)*(0.3*node_sep_);
-            cumulative_covariance(2,2) = (60*3.1415/180)*(60*3.1415/180);
-            odometry->setInformation(cumulative_covariance.inverse());*/
+        //    cumulative_covariance = Matrix3d::Zero();
+         //   cumulative_covariance(0,0) = (0.3*node_sep_)*(0.3*node_sep_);
+          //  cumulative_covariance(1,1) = (0.3*node_sep_)*(0.3*node_sep_);
+           // cumulative_covariance(2,2) = (60*3.1415/180)*(60*3.1415/180);
+           // odometry->setInformation(cumulative_covariance.inverse());
             //odometry->setInformation(ident_cov.inverse());
             odometry->setInformation(cumulative_covariance.inverse());
             ROS_INFO("Added covariance with diagonal %f, %f, %f", cumulative_covariance(0,0), cumulative_covariance(1,1), cumulative_covariance(2,2));
@@ -357,12 +458,8 @@ public:
             vertex_debug_[robot->id()]=msg->header.stamp;
             add_pub_.publish(added_msg);
 
-	    /*ROS_INFO("Optimizing graph with %d vertices and %d edges", optimizer_.vertices().size(), optimizer_.edges().size());
-	    optimizer_.initializeOptimization();
-	    optimizer_.optimize(10);
-	    ROS_INFO("Optimizer DONE");*/
-        }
-    }
+	   }
+    }*/
 
     void publishGraph()
     {

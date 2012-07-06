@@ -5,7 +5,7 @@
      in the visual slam package.  These messages are designed to provide common      datatypes between switchable nodes in a visual slam application.
 
   </description>
-  <author>liz</author>
+  <author>Liz Murphy (liz.murphy@qut.edu.au></author>
   <license>BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/cyphy_vslam_msgs</url>

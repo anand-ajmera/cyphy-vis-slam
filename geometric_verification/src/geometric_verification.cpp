@@ -83,16 +83,44 @@ public:
         image_cache::GetInfo left_call, right_call;
         left_call.request.name = "left";
         right_call.request.name = "right";
+       
+        int left_failed=0;
+        int right_failed=0;
+        
+        bool got_left = 0;
+        bool got_right = 0;
          
-        if(!info_client_.call(left_call))
+        while(!got_left && left_failed < 5)
         {
-            ROS_INFO("Can't get left camera parameters, exiting");
-            exit(1);
+            if(!info_client_.call(left_call))
+            {
+                ROS_INFO("Can't get left camera parameters, retrying in 5 seconds");
+                ros::Duration(5.0).sleep();
+            }
+            else
+                got_left=1;
         }
-        if(!info_client_.call(right_call))
+
+        if(!got_left)
         {
-            ROS_INFO("Can't get right camera parameters, exiting");
-            exit(1);
+            ROS_ERROR("Can't get left camera info parameters from image cache.  Is the camera up and running?");
+            exit(0);
+        }
+        
+        while(!got_right && right_failed < 5)
+        {
+            if(!info_client_.call(right_call))
+            {
+                ROS_INFO("Can't get right camera parameters, retrying");
+            }
+            else
+                got_right = 1;
+        }
+
+        if(!got_right)
+        {
+            ROS_ERROR("Can't get right camera info parameters from image cache.  Is the camera up and running?");
+            exit(0);
         }
 
         // read camera calibration from image_cache 
