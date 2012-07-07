@@ -275,9 +275,17 @@ public:
         string fname = (info_format_ % cache_path_.c_str() % req.name).str();
         string camera;
         sensor_msgs::CameraInfo cam_info;
-        camera_calibration_parsers::readCalibration(fname, camera, cam_info);
-        res.info_msg = cam_info;
-        return true;
+	
+        if(camera_calibration_parsers::readCalibration(fname, camera, cam_info))
+	{
+        	res.info_msg = cam_info;
+	        return true;
+	}
+	else 
+	{
+		ROS_ERROR("Calibration files are not available");
+		return false;
+	}
     }
 
     bool getNeighbourCB(image_cache::GetNeighbours::Request &req, image_cache::GetNeighbours::Response &res)
