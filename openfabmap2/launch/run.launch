@@ -1,9 +1,9 @@
 <launch>
 	<node pkg="openfabmap2" type="run_node" name="run_node">
 		<remap from="image" to="/throttled/image_raw"/>
-		<param name="vocab" value="/home/liz/codescratch/cyphyros/openfabmap2/codebooks/R01/vocab.yml"/>
-		<param name="clTree" value="/home/liz/codescratch/cyphyros/openfabmap2/codebooks/R01/clTree.yml"/>
-		<param name="trainbows" value="/home/liz/codescratch/cyphyros/openfabmap2/codebooks/R01/trainbows.yml"/>
+		<param name="vocab" value="/home/tim/source/cyphy_vis_slam/openfabmap2/codebooks/R02/vocab.yml"/>
+		<param name="clTree" value="/home/tim/source/cyphy_vis_slam/openfabmap2/codebooks/R02/clTree.yml"/>
+		<param name="trainbows" value="/home/tim/source/cyphy_vis_slam/openfabmap2/codebooks/R02/trainbows.yml"/>
 		<param name="DetectorType" value="SURF"/>
 		<param name="FabMapVersion" value="FABMAP2"/>
 		<param name="NewPlaceMethod" value="Sampled"/>
