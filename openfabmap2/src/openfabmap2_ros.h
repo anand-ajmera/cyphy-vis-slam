@@ -83,6 +83,7 @@ namespace openfabmap2_ros
 		int maxMatches_;
 		double minMatchValue_;
 		bool disable_self_match_;
+		int self_match_window_;
 		bool disable_unknown_match_;
 		bool only_new_places_;
 		
