@@ -348,6 +348,7 @@ namespace openfabmap2_ros
 		local_nh_.param<int>("maxMatches", maxMatches_, 0);
 		local_nh_.param<double>("minMatchValue", minMatchValue_, 0.0);
 		local_nh_.param<bool>("DisableSelfMatch", disable_self_match_, false);
+			local_nh_.param<int>("SelfMatchWindow", self_match_window_, 1);
 		local_nh_.param<bool>("DisableUnknownMatch", disable_unknown_match_, false);
 			local_nh_.param<bool>("AddOnlyNewPlaces", only_new_places_, false);
 		
@@ -463,7 +464,7 @@ namespace openfabmap2_ros
 				
 					// Additionally if required, 
 					// --do NOT return matches below self matches OR new places ('-1') 
-					if ((matchImgSeq == matched.fromImgSeq && disable_self_match_)
+					if ((matchImgSeq >= matched.fromImgSeq-self_match_window_ && disable_self_match_)
 							|| (matchImgSeq == -1 && disable_unknown_match_))
 					{
 						break;

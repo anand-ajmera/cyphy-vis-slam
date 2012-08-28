@@ -12,6 +12,7 @@
 		<param name="minMatchValue" value="0.98"/>
 		<param name="maxMatches" value="3"/>
 		<param name="DisableSelfMatch" value="true"/>
+		<param name="SelfMatchWindow" value="50"/>
 		<param name="DisableUnknownMatch" value="true"/>
 		<param name="AddOnlyNewPlaces" value="false"/>
 	</node>
